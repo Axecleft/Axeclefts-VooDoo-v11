@@ -1,0 +1,284 @@
+/* Axecleft's VooDoo — the phone window. Every button is at least 48px (Android's touch guideline); text boxes use 16px so
+   phones don't zoom in when one is tapped. */
+#ax-voodoo {
+  --axs-bg: #17120e;
+  --axs-panel: #241c15;
+  --axs-panel2: #2f251c;
+  --axs-line: #4a3a2a;
+  --axs-text: #efe3c8;
+  --axs-dim: #b9a888;
+  --axs-accent: #d9b25f;
+  --axs-good: #6fbf73;
+  --axs-bad: #e0654f;
+  --axs-touch: 48px;
+  position: fixed;
+  inset: 0;
+  height: var(--axs-h, 100dvh);
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  background: var(--axs-bg);
+  color: var(--axs-text);
+  font-family: "Signika", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.35;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation; /* no double-tap zoom delay */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+}
+body.ax-voodoo-on { overflow: hidden; }
+body.ax-voodoo-on #notifications { z-index: 9500; }
+#ax-voodoo *, #ax-voodoo *::before, #ax-voodoo *::after { box-sizing: border-box; }
+#ax-voodoo button {
+  min-height: var(--axs-touch);
+  min-width: var(--axs-touch);
+  margin: 0;
+  border: 1px solid var(--axs-line);
+  border-radius: 10px;
+  background: var(--axs-panel);
+  color: var(--axs-text);
+  font: inherit;
+  cursor: pointer;
+}
+#ax-voodoo button:focus-visible { outline: 2px solid var(--axs-accent); outline-offset: 2px; }
+#ax-voodoo input, #ax-voodoo textarea, #ax-voodoo select { font-size: 16px; }
+#ax-voodoo [hidden] { display: none !important; }
+
+/* Top: the character switcher and the screen-on button */
+.axs-top { display: flex; gap: 8px; padding: 8px; background: var(--axs-panel); border-bottom: 1px solid var(--axs-line); flex: 0 0 auto; }
+#ax-voodoo .axs-who { flex: 1; display: flex; align-items: center; gap: 10px; padding: 4px 12px 4px 4px; text-align: left; overflow: hidden; }
+.axs-who img { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; border: none; flex: 0 0 auto; }
+.axs-who .axs-name-box { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+.axs-who .axs-scene { font-size: 13px; font-weight: 400; color: var(--axs-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.axs-who .axs-scene.away { color: var(--axs-bad); }
+.axs-menu-item .axs-menu-icon { width: 46px; text-align: center; font-size: 22px; color: var(--axs-accent); }
+.axs-menu-item small { display: block; margin-left: 0 !important; font-size: 13px; }
+#ax-voodoo .axs-menu-item { min-height: 52px !important; width: 100%; }
+.axs-sheet-box [data-menu] { display: flex; flex-direction: column; gap: 6px; }
+.axs-sheet-box [data-menu] .axs-sec { margin-bottom: 0; }
+.axs-hot-pages { margin-bottom: 0; }
+.axs-who .axs-name { flex: 1; font-size: 18px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#ax-voodoo .axs-icon { flex: 0 0 var(--axs-touch); display: grid; place-items: center; font-size: 20px; }
+.axs-icon.active { color: var(--axs-bg); background: var(--axs-accent) !important; border-color: var(--axs-accent) !important; }
+
+/* Lost connection */
+.axs-banner { flex: 0 0 auto; padding: 8px 12px; background: #5a2a1f; color: #fff; display: flex; align-items: center; gap: 8px; }
+#ax-voodoo .axs-banner span { flex: 1; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+/* Views */
+.axs-main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.axs-view { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.axs-content { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 12px; }
+
+/* Character tab strip: scrolls sideways */
+.axs-tabs { flex: 0 0 auto; display: flex; gap: 6px; padding: 8px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; border-bottom: 1px solid var(--axs-line); }
+.axs-tabs::-webkit-scrollbar { display: none; }
+#ax-voodoo .axs-tabs button { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 0 14px; white-space: nowrap; scroll-snap-align: center; }
+#ax-voodoo .axs-tabs button.active { background: var(--axs-accent); color: var(--axs-bg); border-color: var(--axs-accent); font-weight: 600; }
+
+/* Bottom bar */
+.axs-bottom { flex: 0 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); background: var(--axs-panel); border-top: 1px solid var(--axs-line); }
+#ax-voodoo .axs-bottom button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 56px; font-size: 13px; border-color: transparent; background: transparent; }
+#ax-voodoo .axs-bottom button i { font-size: 20px; }
+#ax-voodoo .axs-bottom button.active { color: var(--axs-accent); background: var(--axs-panel2); border-color: var(--axs-line); }
+#ax-voodoo .axs-bottom button.lit i { color: var(--axs-bad); }
+#ax-voodoo .axs-bottom button.myturn { animation: axs-pulse 1.2s ease-in-out infinite; }
+@keyframes axs-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(224, 101, 79, 0.0); } 50% { box-shadow: 0 0 0 4px rgba(224, 101, 79, 0.7); } }
+#ax-voodoo.axs-typing .axs-bottom { display: none; } /* the on-screen keyboard is open */
+
+/* Cards and stat boxes */
+.axs-card { background: var(--axs-panel); border: 1px solid var(--axs-line); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+.axs-line1 { font-size: 18px; font-weight: 600; }
+.axs-hint { color: var(--axs-dim); font-size: 14px; }
+.axs-center { text-align: center; }
+.axs-hp-head { display: flex; justify-content: space-between; align-items: baseline; }
+.axs-hp .axs-value { font-size: 24px; font-weight: 700; }
+.axs-bar { height: 10px; border-radius: 5px; background: #3a2f25; overflow: hidden; margin: 8px 0 4px; }
+.axs-bar > div { height: 100%; background: var(--axs-good); }
+.axs-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 10px; }
+.axs-abilities { grid-template-columns: repeat(3, 1fr); }
+.axs-stat { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 72px; padding: 8px; background: var(--axs-panel); border: 1px solid var(--axs-line); border-radius: 12px; text-align: center; }
+.axs-label { font-size: 13px; color: var(--axs-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+.axs-value { font-size: 22px; font-weight: 700; }
+.axs-sub { font-size: 14px; color: var(--axs-dim); }
+.axs-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; min-height: 50%; text-align: center; color: var(--axs-dim); padding: 24px; }
+.axs-empty i { font-size: 40px; color: var(--axs-line); }
+
+/* Character picker: a sheet that slides up from the bottom */
+.axs-sheet { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.55); display: flex; align-items: flex-end; z-index: 2; }
+.axs-sheet-box { width: 100%; max-height: 75%; overflow-y: auto; background: var(--axs-panel); border-top: 1px solid var(--axs-line); border-radius: 16px 16px 0 0; padding: 8px 12px calc(12px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 6px; }
+.axs-sheet-head { display: flex; align-items: center; justify-content: space-between; font-weight: 600; font-size: 18px; padding: 4px 0; }
+#ax-voodoo .axs-pick { display: flex; align-items: center; gap: 12px; padding: 6px 12px 6px 6px; text-align: left; min-height: 60px !important; }
+.axs-pick img { width: 46px; height: 46px; border-radius: 8px; object-fit: cover; border: none; }
+.axs-pick span { flex: 1; font-size: 17px; }
+.axs-pick.active { border-color: var(--axs-accent) !important; }
+.axs-pick.active i { color: var(--axs-accent); }
+
+/* Toasts */
+.axs-toasts { position: absolute; left: 12px; right: 12px; top: 72px; display: flex; flex-direction: column; gap: 6px; pointer-events: none; z-index: 3; }
+.axs-toast { padding: 10px 14px; border-radius: 10px; background: #3b3126; border: 1px solid var(--axs-line); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); }
+.axs-toast.warn { border-color: var(--axs-accent); }
+.axs-toast.error { border-color: var(--axs-bad); }
+
+/* GM side: the accounts pop-up and the player list */
+.ax-voodoo-accounts { width: 100%; border-collapse: collapse; }
+.ax-voodoo-accounts td, .ax-voodoo-accounts th { padding: 4px 6px; text-align: left; }
+.ax-voodoo-accounts input[type="text"] { width: 100%; }
+.ax-voodoo-phone { margin-left: 4px; opacity: 0.8; }
+
+/* ---------- Step 2: lists, toggles, rolling ---------- */
+#ax-voodoo .axs-rollable { cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+#ax-voodoo .axs-stat.axs-rollable { border-color: #6a5236; }
+#ax-voodoo .axs-stat.axs-rollable:active, #ax-voodoo .axs-pressing { background: var(--axs-panel2) !important; transform: scale(0.98); }
+#ax-voodoo .axs-pressing { box-shadow: inset 0 0 0 2px var(--axs-accent); }
+.axs-saves { grid-template-columns: repeat(3, 1fr); }
+.axs-sec { font-size: 15px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--axs-accent); margin: 16px 2px 6px; border: none; font-weight: 600; }
+.axs-sec small { text-transform: none; letter-spacing: 0; color: var(--axs-dim); font-weight: 400; margin-left: 6px; }
+.axs-list { display: flex; flex-direction: column; gap: 6px; }
+.axs-row { display: flex; align-items: center; gap: 6px; min-height: 56px; background: var(--axs-panel); border: 1px solid var(--axs-line); border-radius: 12px; padding: 4px 6px 4px 4px; margin-bottom: 6px; }
+.axs-row.dim { opacity: 0.55; }
+.axs-row-main { flex: 1; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 2px 4px; border-radius: 8px; min-width: 0; }
+.axs-row-main img { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; border: none; flex: 0 0 auto; }
+.axs-row-text { display: flex; flex-direction: column; min-width: 0; }
+.axs-row-name { font-size: 17px; overflow: hidden; text-overflow: ellipsis; }
+.axs-row-sub { font-size: 14px; color: var(--axs-dim); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.axs-mod { font-size: 20px; font-weight: 700; min-width: 48px; text-align: right; padding-right: 8px; }
+#ax-voodoo .axs-small { flex: 0 0 48px; font-size: 18px; color: var(--axs-dim); background: transparent; border-color: transparent; }
+/* A switch: equip, buffs, conditions */
+#ax-voodoo .axs-toggle { flex: 0 0 64px; min-width: 64px; display: grid; place-items: center; background: transparent; border-color: transparent; }
+.axs-toggle span { position: relative; width: 48px; height: 28px; border-radius: 14px; background: #4a3f34; transition: background 0.15s; }
+.axs-toggle span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #cfc2a5; transition: left 0.15s; }
+.axs-toggle.on span { background: var(--axs-good); }
+.axs-toggle.on span::after { left: 23px; background: #fff; }
+#ax-voodoo .axs-wide { width: 100%; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.axs-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+#ax-voodoo .axs-primary { background: var(--axs-accent); color: var(--axs-bg); border-color: var(--axs-accent); font-weight: 600; }
+#ax-voodoo button:disabled { opacity: 0.45; }
+.axs-coins { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 6px; }
+.axs-coin { display: flex; flex-direction: column; align-items: center; padding: 8px 4px; background: var(--axs-panel); border: 1px solid var(--axs-line); border-radius: 10px; }
+.axs-coin b { font-size: 18px; }
+.axs-coin span { font-size: 12px; color: var(--axs-dim); text-transform: uppercase; }
+.axs-book .axs-line1 { color: var(--axs-accent); }
+/* Notes */
+.axs-notes textarea { width: 100%; min-height: 45vh; font-family: inherit; font-size: 16px; line-height: 1.4; background: var(--axs-panel); color: var(--axs-text); border: 1px solid var(--axs-line); border-radius: 10px; padding: 10px; resize: vertical; }
+.axs-notes-view { font-size: 16px; overflow-wrap: anywhere; }
+.axs-notes-view img, .axs-desc img { max-width: 100%; height: auto; }
+.axs-desc { font-size: 16px; overflow-wrap: anywhere; padding: 4px 2px 8px; }
+.axs-desc a, .axs-notes-view a { color: var(--axs-accent); }
+
+/* Roll options and other panels */
+.axs-opts { display: flex; flex-direction: column; gap: 8px; padding: 4px 0; }
+.axs-opt { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-height: 48px; padding: 6px 8px; background: var(--axs-panel2); border-radius: 10px; }
+.axs-opt > span:first-child { flex: 1 1 40%; min-width: 0; font-size: 15px; }
+.axs-opt input[type="text"], .axs-opt select { flex: 1 1 90px; min-width: 0; min-height: 44px; font-size: 16px; background: var(--axs-bg); color: var(--axs-text); border: 1px solid var(--axs-line); border-radius: 8px; padding: 0 8px; }
+.axs-opt-check input { width: 26px; height: 26px; flex: 0 0 26px; accent-color: var(--axs-accent); }
+.axs-opt-check span { flex: 1; }
+.axs-steps { display: flex; gap: 4px; }
+#ax-voodoo .axs-steps button { min-width: 44px; min-height: 44px; font-size: 20px; padding: 0; }
+.axs-opt-btns { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 8px; }
+#ax-voodoo .axs-opt-btn { flex: 1 1 40%; font-weight: 600; }
+#ax-voodoo .axs-opt-btn.default { background: var(--axs-accent); color: var(--axs-bg); border-color: var(--axs-accent); }
+
+/* Chat */
+.axs-filters { border-bottom: 1px solid var(--axs-line); }
+.axs-chat-log { display: flex; flex-direction: column; gap: 8px; }
+.axs-chat-log > li, .axs-chat-log > .chat-message, .axs-chat-log > .message { list-style: none; margin: 0; padding: 8px 10px; background: #f0e6d2; color: #191813; border-radius: 10px; font-size: 15px; overflow-wrap: anywhere; }
+.axs-chat-log .message-header { display: flex; flex-wrap: wrap; gap: 4px 8px; font-size: 13px; }
+.axs-chat-log .message-header .message-delete, .axs-chat-log .message-header .chat-control { display: none; }
+.axs-chat-log img { max-width: 100%; height: auto; }
+.axs-chat-log .dice-tooltip { display: none; }
+.axs-chat-log .dice-roll.expanded .dice-tooltip { display: block; }
+.axs-msg-fallback { background: var(--axs-panel); border-radius: 10px; padding: 8px; }
+.axs-send { flex: 0 0 auto; display: flex; gap: 8px; padding: 8px; background: var(--axs-panel); border-top: 1px solid var(--axs-line); }
+.axs-send textarea { flex: 1; min-height: 48px; max-height: 140px; font-family: inherit; font-size: 16px; line-height: 1.3; padding: 12px; background: var(--axs-bg); color: var(--axs-text); border: 1px solid var(--axs-line); border-radius: 10px; resize: none; }
+.axs-badge { position: absolute; top: 4px; right: calc(50% - 26px); min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--axs-bad); color: #fff; font-size: 12px; line-height: 20px; text-align: center; }
+#ax-voodoo .axs-bottom button { position: relative; }
+
+/* Combat */
+.axs-round { display: flex; justify-content: space-between; align-items: center; font-size: 17px; }
+.axs-yourturn { color: var(--axs-bad); }
+.axs-combatant.current { border-color: var(--axs-accent); box-shadow: inset 0 0 0 1px var(--axs-accent); }
+.axs-combatant.mine .axs-row-name { font-weight: 700; }
+.axs-combatant.mine { background: var(--axs-panel2); }
+.axs-init { font-size: 20px; font-weight: 700; min-width: 48px; text-align: center; }
+
+/* D35E's roll windows: opened out of sight (a tap presses them; a long-press shows their fields on the phone) */
+.axs-proxied { position: fixed !important; left: -10000px !important; top: 0 !important; opacity: 0 !important; pointer-events: none !important; }
+/* Any other window on the phone: above the VooDoo window, the width of the screen */
+body.ax-voodoo-on .axs-raised { z-index: 9600 !important; left: 0 !important; right: auto !important; top: 8vh !important; width: 100vw !important; min-width: 0 !important; max-width: 100vw !important; min-height: 0 !important; max-height: 84vh !important; box-sizing: border-box !important; transform: none !important; }
+/* Windows with a minimum size wider or taller than a phone (Foundry's journal: 680 × 680) fit the screen; the close button stays in reach */
+body.ax-voodoo-on .axs-raised .window-header { min-width: 0; flex-wrap: nowrap; }
+body.ax-voodoo-on .axs-raised .window-header .window-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; }
+body.ax-voodoo-on .axs-raised .window-header > button, body.ax-voodoo-on .axs-raised .window-header > a { flex: 0 0 auto; }
+body.ax-voodoo-on .axs-raised .window-content { min-width: 0 !important; min-height: 0 !important; overflow: auto; }
+body.ax-voodoo-on .axs-raised.journal-entry .journal-sidebar { flex-basis: var(--sidebar-width-collapsed, 40px); }
+body.ax-voodoo-on .axs-raised.journal-entry.expanded .journal-sidebar { flex-basis: min(300px, 70vw); }
+body.ax-voodoo-on .axs-raised iframe { min-height: 0 !important; }
+body.ax-voodoo-on .axs-raised button { min-height: 44px; }
+
+/* ---------- Party (D35E's Party HUD) ---------- */
+#ax-voodoo .axs-bottom { grid-template-columns: repeat(4, 1fr); }
+.axs-party { display: flex; flex-direction: column; gap: 8px; }
+#ax-voodoo .axs-member { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px; text-align: left; min-height: 76px; }
+#ax-voodoo .axs-member.current { border-color: var(--axs-accent); box-shadow: inset 0 0 0 1px var(--axs-accent); }
+#ax-voodoo .axs-member.down .axs-member-img { filter: grayscale(1) brightness(0.6); }
+.axs-member-img { width: 60px; height: 60px; border-radius: 10px; object-fit: cover; border: 1px solid var(--axs-line); flex: 0 0 auto; }
+.axs-member-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.axs-member-name { font-size: 18px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axs-hpbar { position: relative; display: block; height: 22px; border-radius: 6px; background: #3a2f25; overflow: hidden; }
+.axs-hpbar > span { position: absolute; inset: 0 auto 0 0; background: var(--axs-good); }
+.axs-hpbar.mid > span { background: #c9a43b; }
+.axs-hpbar.low > span { background: var(--axs-bad); }
+.axs-hpbar b { position: relative; display: block; text-align: center; font-size: 14px; line-height: 22px; color: #fff; text-shadow: 0 1px 2px #000; }
+.axs-hpbar.down b { color: #ffb4a8; }
+.axs-buffs { display: flex; flex-wrap: wrap; gap: 4px; }
+.axs-buffs img { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--axs-line); object-fit: cover; }
+
+/* ---------- Map (mobile accounts with the map on) ---------- */
+/* Foundry's own panels stay hidden: the VooDoo window does their jobs. Notifications and windows still show. */
+body.ax-voodoo-map #interface { visibility: hidden; }
+body.ax-voodoo-map #notifications, body.ax-voodoo-map .axs-raised, body.ax-voodoo-map #interface .app, body.ax-voodoo-map #interface .application { visibility: visible; }
+/* Foundry v11 marks its own panels (sidebar, scene list, players, controls) "app" too: keep those hidden; only windows show */
+body.ax-voodoo-map #ui-left .app, body.ax-voodoo-map #ui-right .app, body.ax-voodoo-map #ui-top .app, body.ax-voodoo-map #ui-bottom .app { visibility: hidden; }
+/* On the Map view the window is see-through between its top and bottom bars, over Foundry's map */
+#ax-voodoo.axs-on-map { background: transparent; }
+.axs-map { position: relative; }
+.axs-map-bar, .axs-map-foot { flex: 0 0 auto; background: var(--axs-panel); padding: 6px 8px; display: flex; gap: 6px; align-items: center; }
+.axs-map-bar { border-bottom: 1px solid var(--axs-line); }
+.axs-map-foot { flex-direction: column; align-items: stretch; border-top: 1px solid var(--axs-line); max-height: 45%; overflow-y: auto; }
+#ax-voodoo .axs-map-btn { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 2px 4px; white-space: normal; text-align: center; line-height: 1.1; font-size: 13px; }
+#ax-voodoo .axs-map-btn i { font-size: 16px; }
+@media (max-width: 480px) { #ax-voodoo .axs-map-btn i { display: none; } }
+#ax-voodoo .axs-map-btn span { overflow-wrap: anywhere; }
+#ax-voodoo .axs-map-btn.on { background: var(--axs-accent); color: var(--axs-bg); border-color: var(--axs-accent); font-weight: 600; }
+.axs-map-row { display: flex; gap: 6px; }
+.axs-map-touch { flex: 1 1 auto; min-height: 0; position: relative; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.axs-map-msg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; padding: 24px; background: var(--axs-bg); color: var(--axs-dim); }
+.axs-map-msg i { font-size: 40px; color: var(--axs-line); }
+.axs-map-hint { color: var(--axs-dim); font-size: 14px; text-align: center; padding: 2px 4px; }
+.axs-map-help { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.axs-map-help > span { flex: 0 1 auto; }
+#ax-voodoo .axs-map-help .axs-icon { flex: 0 0 40px; height: 40px; min-height: 40px !important; font-size: 18px; }
+.axs-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+#ax-voodoo .axs-chip { display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border-color: var(--axs-bad); }
+.axs-chip img { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; border: none; }
+.axs-chip span { font-size: 16px; }
+#ax-voodoo.axs-on-map .axs-toasts { top: 136px; }
+
+/* ---------- GM phone ---------- */
+.axs-hp-edit { display: flex; gap: 6px; margin-top: 8px; }
+.axs-hp-edit input { flex: 1 1 60px; min-width: 0; min-height: 48px; font-size: 18px; text-align: center; background: var(--axs-bg); color: var(--axs-text); border: 1px solid var(--axs-line); border-radius: 10px; }
+#ax-voodoo .axs-hp-edit button { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 8px; }
+#ax-voodoo .axs-search { width: 100%; min-height: 48px; font-size: 16px; padding: 0 12px; background: var(--axs-bg); color: var(--axs-text); border: 1px solid var(--axs-line); border-radius: 10px; }
+.axs-pick small { margin-left: 6px; }
+.axs-pick-lists .axs-pick, .axs-pick-found .axs-pick { width: 100%; margin-bottom: 6px; }
+#ax-voodoo .axs-map-eye.on { background: var(--axs-accent); color: var(--axs-bg); border-color: var(--axs-accent); }
+.axs-ghost { position: absolute; opacity: 0.6; pointer-events: none; border: 2px dashed var(--axs-accent); border-radius: 6px; object-fit: contain; }
+
+/* Tours (Axecleft's Tools 9.7) above the VooDoo window, sized for a phone */
+body.ax-voodoo-on .tour-overlay { z-index: 9700 !important; }
+body.ax-voodoo-on .tour-fadeout { z-index: 9701 !important; }
+body.ax-voodoo-on #tooltip, body.ax-voodoo-on .tour-center-step { z-index: 9702 !important; }
+body.ax-voodoo-on #tooltip.tour { max-width: min(340px, calc(100vw - 24px)); font-size: 15px; }
+body.ax-voodoo-on .tour-center-step { max-width: calc(100vw - 24px); box-sizing: border-box; }
+body.ax-voodoo-on .tour .step-button { min-width: 44px; min-height: 40px; }
