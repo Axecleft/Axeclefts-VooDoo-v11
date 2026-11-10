@@ -2,7 +2,7 @@
   "id": "axeclefts-voodoo",
   "title": "Axecleft's VooDoo",
   "description": "Your D35E character sheet on your phone. The GM creates a linked mobile account for each player; logging in with it from a phone opens a full-screen window with the character sheet, chat and combat, built for touch, and an optional touch map to target tokens and place spell areas. Mobile accounts always have the same characters as the player's main account.",
-  "version": "1.11.4.5",
+  "version": "1.11.4.7",
   "compatibility": {
     "minimum": "11",
     "verified": "11.315",
@@ -22,6 +22,56 @@
         "type": "system",
         "compatibility": {}
       }
+    ],
+    "recommends": [
+      {
+        "id": "axecleft-gemstones",
+        "type": "module",
+        "manifest": "https://github.com/Axecleft/Axeclefts-Gemstones-v11/releases/latest/download/module.json",
+        "reason": "Gems, art objects and jewelry, with the Treasure Generator and the Merchant Generator"
+      },
+      {
+        "id": "axeclefts-armory",
+        "type": "module",
+        "manifest": "https://github.com/Axecleft/Armory-v11/releases/latest/download/module.json",
+        "reason": "Magic weapons and armor, the Forge and crafting"
+      },
+      {
+        "id": "axeclefts-curios",
+        "type": "module",
+        "manifest": "https://github.com/Axecleft/Curios-v11/releases/latest/download/module.json",
+        "reason": "Potions, scrolls, wands, rings and wondrous items, and crafting"
+      },
+      {
+        "id": "traps-and-poisons",
+        "type": "module",
+        "manifest": "https://github.com/Axecleft/Traps-and-Poisons-v11/releases/latest/download/module.json",
+        "reason": "Traps, poisons and diseases, with trap kits and crafting"
+      },
+      {
+        "id": "axeclefts-adventurers-minions",
+        "type": "module",
+        "manifest": "https://github.com/Axecleft/Axeclefts-Adventurers-Minions-v11/releases/latest/download/module.json",
+        "reason": "Build characters, NPCs, creatures and encounters"
+      },
+      {
+        "id": "axeclefts-hoards",
+        "type": "module",
+        "manifest": "https://github.com/Axecleft/Axeclefts-Hoard-Editor-v11/releases/latest/download/module.json",
+        "reason": "Build, save and share out treasure hoards (a Hoards tab in the Treasure Generator)"
+      },
+      {
+        "id": "axeclefts-printable-sheets",
+        "type": "module",
+        "manifest": "https://github.com/Axecleft/Axeclefts-Printable-Sheets-v11/releases/latest/download/module.json",
+        "reason": "Print paper character sheets, stat blocks and spellbooks"
+      },
+      {
+        "id": "axeclefts-tool-suite",
+        "type": "module",
+        "manifest": "https://github.com/Axecleft/Axecleft-s-Tools-Suite/releases/latest/download/module.json",
+        "reason": "Turn the suite's modules on and off and check them for updates"
+      }
     ]
   },
   "esmodules": [
@@ -33,6 +83,6 @@
   ],
   "languages": [],
   "manifest": "https://github.com/Axecleft/Axeclefts-VooDoo-v11/releases/latest/download/module.json",
-  "download": "https://github.com/Axecleft/Axeclefts-VooDoo-v11/releases/download/1.11.4.5/module.zip",
+  "download": "https://github.com/Axecleft/Axeclefts-VooDoo-v11/releases/download/1.11.4.7/module.zip",
   "url": "https://github.com/Axecleft/Axeclefts-VooDoo-v11"
 }

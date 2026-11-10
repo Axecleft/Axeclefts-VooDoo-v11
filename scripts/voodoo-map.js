@@ -9,6 +9,7 @@
  *   - when a spell asks for its area, the view switches here: tap or drag where it goes, turn it with the arrow
  *     buttons, then Place (or Cancel). These drive D35E's own preview (the moves, clicks, wheel and right-click it
  *     listens for), so the area is placed and its targets found exactly as on a computer.
+ *   - when another module asks for a spot (setting a trap from a kit), the view switches here: tap the spot.
  * Press and hold a token to play it (and select it); keep holding and drag to move it. Players take only their own
  * tokens and walls block them; the GM takes any token and moves freely, as on a computer. While another view is showing, the map stops drawing to
  * save the battery.
@@ -21,6 +22,7 @@ export class MapView {
     this.win = win;
     this.mode = "map";       // what one finger does while placing a spell area: "area" (move it) or "map" (move the map)
     this.placing = null;     // the D35E template preview being placed
+    this.picking = null;     // another module asked for a spot on the map: { resolve, prompt, back }
     this.pointers = new Map();
     this.eyes = this.win.recall("eyes", "1") === "1"; // see through the picked character's token
     this.pinch = null;
@@ -71,6 +73,11 @@ export class MapView {
     const foot = this.win.el.querySelector(".axs-map-foot");
     if (!foot) return;
     const H = this.H, esc = this.esc;
+    if (this.picking) {
+      foot.innerHTML = `<div class="axs-map-hint">${esc(this.picking.prompt)}</div>
+        <div class="axs-pair"><button type="button" data-map="pick-cancel"><i class="fas fa-xmark"></i> ${H("Cancel")}</button></div>`;
+      return;
+    }
     if (this.placing) {
       const moving = this.mode === "map";
       foot.innerHTML = `<div class="axs-map-hint">${H(moving ? /*t*/"Drag to move the map; switch back to move the area." : /*t*/"Tap or drag on the map to put the spell's area there.")}</div>
@@ -106,7 +113,7 @@ export class MapView {
       if (this.placing && this.mode === "area" && this.pointers.size === 1) this.moveArea(ev.clientX, ev.clientY);
       // Press and hold a token to take it; keep holding and drag to move it (players: their own tokens, walls block)
       clearTimeout(this.holdTimer);
-      if (!this.placing && this.pointers.size === 1 && this.ready) {
+      if (!this.placing && !this.picking && this.pointers.size === 1 && this.ready) {
         const id = ev.pointerId;
         this.holdTimer = setTimeout(() => {
           const p = this.pointers.get(id);
@@ -140,6 +147,7 @@ export class MapView {
       if (this.pointers.size < 2) this.pinch = null;
       if (!p || ev.type === "pointercancel") return;
       const tap = Date.now() - p.t0 < TAP_MS && Math.hypot(ev.clientX - p.x0, ev.clientY - p.y0) < TAP_PX;
+      if (tap && this.picking && this.pointers.size === 0) return this.pickAt(ev.clientX, ev.clientY);
       if (tap && !this.placing && this.pointers.size === 0) this.tapAt(ev.clientX, ev.clientY);
     };
     layer.addEventListener("pointerup", up);
@@ -278,7 +286,7 @@ export class MapView {
 
   /* ---------- buttons ---------- */
   button(what, id) {
-    if (!this.ready && !["cancel", "help"].includes(what)) return;
+    if (!this.ready && !["cancel", "help", "pick-cancel"].includes(what)) return;
     const zoom = (f) => canvas.animatePan({ scale: (canvas.stage.scale.x || 1) * f, duration: 150 });
     switch (what) {
       case "zoom-in": return zoom(1.25);
@@ -294,6 +302,7 @@ export class MapView {
       case "turn-right": return this.turn(1);
       case "place": return this.place();
       case "cancel": return this.cancel();
+      case "pick-cancel": return this.endPick(null);
     }
   }
   /** The picked character's token on this map (an unlinked creature: its own token; else the linked one first). */
@@ -323,6 +332,38 @@ export class MapView {
     const tk = this.myToken();
     if (!tk) return this.win.toast(this.t("Your character has no token on this map."), "warn");
     canvas.animatePan({ x: tk.center.x, y: tk.center.y, duration: 250 });
+  }
+
+  /* ---------- a spot on the map, for another module (setting a trap…) ---------- */
+  /**
+   * Ask for a spot on the map: the view switches to the map, one tap picks the grid space (dragging still moves the
+   * map), Cancel gives up. Resolves { x, y } (the top-left of the space, as a click on the canvas would give) or null.
+   */
+  pickPoint({ prompt } = {}) {
+    if (!this.ready) return Promise.resolve(null);
+    this.endPick(null);
+    return new Promise((resolve) => {
+      this.picking = { resolve, prompt: prompt || this.t("Tap the spot on the map."), back: this.win.view };
+      if (this.win.view !== "map") this.win.show("map"); else this.shown(true);
+      this.renderFoot();
+      this.win.toast(this.picking.prompt);
+    });
+  }
+  pickAt(clientX, clientY) {
+    const w = this.worldPoint(clientX, clientY);
+    let tl = null;
+    try { tl = canvas.grid.getTopLeftPoint?.(w) ?? null; } catch (e) { tl = null; }
+    if (!tl) { try { const [x, y] = canvas.grid.getTopLeft(w.x, w.y); tl = { x, y }; } catch (e) { tl = { x: w.x, y: w.y }; } }
+    navigator.vibrate?.(15);
+    this.endPick({ x: Math.round(tl.x), y: Math.round(tl.y) });
+  }
+  endPick(pt) {
+    const p = this.picking;
+    if (!p) return;
+    this.picking = null;
+    this.renderFoot();
+    if (p.back && p.back !== "map") this.win.show(p.back);
+    p.resolve(pt);
   }
 
   /* ---------- placing a spell's area (D35E's template preview) ---------- */

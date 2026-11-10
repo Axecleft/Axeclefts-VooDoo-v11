@@ -246,6 +246,10 @@ export class VooDooWindow {
         case "open-shop": return this.openActorSheet(this.shopList?.[Number(b.dataset.key)]?.actor);
         case "menu-tab": return this.openSidebarTab(b.dataset.key);
         case "macro": return this.runMacro(b.dataset.id);
+        case "hot-add": return this.openMacroPicker();
+        case "hot-pick": return this.addMacro(b.dataset.id);
+        case "hot-remove": return this.removeMacro(b.dataset.slot);
+        case "hot-copy": return this.copyDesktopHotbar();
         case "hot-page": this.hotPage = Math.min(5, Math.max(1, (this.hotPage ?? 1) + Number(b.dataset.dir))); return this.openMenu("hotbar");
         case "map-toggle": return this.toggleMap();
         case "tour": this.closeSheet(true); return this.act(() => startPhoneTour());
@@ -667,6 +671,8 @@ export class VooDooWindow {
     const controls = modern ? Object.fromEntries(names.map((n) => [n, { name: n, title: n, tools: {} }])) : names.map((n) => ({ name: n, title: n, tools: [] }));
     try { Hooks.callAll("getSceneControlButtons", controls); } catch (err) { console.warn(`${this.MOD} | scene controls`, err); }
     const groups = Array.isArray(controls) ? controls : Object.values(controls);
+    // A module with a button both in Axecleft's Tools and in the scene controls shows once
+    const seen = new Set(out.map((x) => String(x.title).trim().toLowerCase()));
     for (const g of groups) {
       if (!g || g.name === "axecleft" || g.visible === false) continue;
       const tools = Array.isArray(g.tools) ? g.tools : Object.values(g.tools ?? {});
@@ -674,6 +680,8 @@ export class VooDooWindow {
         const fn = tl?.onChange ?? tl?.onClick;
         if (!tl?.button || tl.visible === false || typeof fn !== "function") continue;
         const title = loc(tl.title ?? tl.name);
+        if (seen.has(String(title).trim().toLowerCase())) continue;
+        seen.add(String(title).trim().toLowerCase());
         const group = names.includes(g.name) ? "" : loc(g.title ?? g.name);
         out.push({ key: `sc:${g.name}.${tl.name}`, title, hint: "", icon: tl.icon ?? "fas fa-circle", group, run: () => fn.call(tl, new MouseEvent("click"), true) });
       }
@@ -726,14 +734,17 @@ export class VooDooWindow {
     const MODES = { merchant: [/*t*/"Merchant", "fas fa-store"], loot: [/*t*/"Loot", "fas fa-sack-dollar"], storage: [/*t*/"Party storage", "fas fa-box-archive"] };
     this.shopList = this.shopsHere();
     const shops = this.shopList.map((x, i) => `<button type="button" class="axs-pick axs-menu-item" data-action="open-shop" data-key="${i}"><img src="${this.esc(x.actor.img)}" alt=""><span>${this.esc(x.actor.name)}<small class="axs-hint">${this.H(MODES[x.mode]?.[0] ?? "Merchant")}</small></span></button>`).join("");
-    const macros = slots.filter((x) => x.macro).map((x) => `<button type="button" class="axs-pick axs-menu-item" data-action="macro" data-id="${x.macro.id}"><img src="${this.esc(x.macro.img)}" alt=""><span>${this.esc(x.macro.name)} <small class="axs-hint">${x.slot % 10 || 10}</small></span></button>`).join("");
+    const macros = slots.filter((x) => x.macro).map((x) => `<div class="axs-hot-row"><button type="button" class="axs-pick axs-menu-item" data-action="macro" data-id="${x.macro.id}"><img src="${this.esc(x.macro.img)}" alt=""><span>${this.esc(x.macro.name)} <small class="axs-hint">${x.slot % 10 || 10}</small></span></button><button type="button" class="axs-icon" data-action="hot-remove" data-slot="${x.slot}" title="${this.H("Take it off the hotbar")}"><i class="fas fa-xmark"></i></button></div>`).join("");
+    const desk = this.desktopHotbar().length;
     const box = this.openSheet(`<div class="axs-sheet-head"><span>${this.H("Menu")}</span><button type="button" class="axs-icon" data-action="close-sheet" title="${this.H("Close")}"><i class="fas fa-xmark"></i></button></div>
       ${shops ? `<div data-menu="shops">${head(this.t("Shops and loot"), this.viewedScene()?.name ?? "")}${shops}</div>` : ""}
       <div data-menu="tools">${head(this.t("Tools"))}${toolsHtml}</div>
       <div data-menu="sidebar">${head(this.t("Sidebar"))}${tabs}</div>
       <div data-menu="hotbar">${head(this.t("Hotbar"), this.t("page {n}", { n: page }))}
         <div class="axs-row axs-hot-pages"><button type="button" class="axs-icon" data-action="hot-page" data-dir="-1"${page <= 1 ? " disabled" : ""} title="${this.H("Previous page")}"><i class="fas fa-caret-left"></i></button><span class="axs-row-name" style="flex:1;text-align:center">${this.H("Page {n} of 5", { n: page })}</span><button type="button" class="axs-icon" data-action="hot-page" data-dir="1"${page >= 5 ? " disabled" : ""} title="${this.H("Next page")}"><i class="fas fa-caret-right"></i></button></div>
-        ${macros || `<p class="axs-hint">${this.H("No macros on this page of your hotbar.")}</p>`}</div>`);
+        ${macros || `<p class="axs-hint">${this.H("No macros on this page of your hotbar.")}</p>`}
+        <button type="button" class="axs-wide" data-action="hot-add"><i class="fas fa-plus"></i> ${this.H("Add a macro")}</button>
+        ${desk ? `<button type="button" class="axs-wide" data-action="hot-copy"><i class="fas fa-copy"></i> ${this.H("Copy my desktop hotbar")}</button>` : ""}</div>`);
     if (focus) box.querySelector(`[data-menu="${focus}"]`)?.scrollIntoView({ block: "start" });
   }
   async runTool(key) {
@@ -751,6 +762,71 @@ export class VooDooWindow {
       if (typeof tab.createPopout === "function") return tab.createPopout().render(true);
       return tab.render?.(true);
     });
+  }
+  /* ---------- the hotbar: adding, removing, copying the desktop account's ---------- */
+  /** Can this account run the macro (it sees it, and a script macro needs the right to run scripts)? */
+  canRun(m) {
+    if (!m) return false;
+    try { if (!m.testUserPermission(game.user, "LIMITED")) return false; } catch (e) { return false; }
+    return m.canExecute !== false;
+  }
+  /** The main (desktop) account's hotbar: [{ slot, macro }] for the macros this account can run. */
+  desktopHotbar() {
+    const main = game.users?.get(game.user.getFlag?.(this.MOD, "main") ?? "");
+    return Object.entries(main?.hotbar ?? {}).map(([slot, id]) => ({ slot: Number(slot), macro: game.macros?.get(id) })).filter((x) => x.macro && this.canRun(x.macro));
+  }
+  /** Pick a macro for the first empty slot on the hotbar page shown: the desktop hotbar's first, then every other one. */
+  openMacroPicker() {
+    const esc = this.esc, page = this.hotPage ?? 1, seen = new Set();
+    const item = (m, sub = "") => {
+      if (seen.has(m.id)) return "";
+      seen.add(m.id);
+      return `<button type="button" class="axs-pick" data-action="hot-pick" data-id="${m.id}" data-name="${esc(m.name.toLowerCase())}"><img src="${esc(m.img)}" alt=""><span>${esc(m.name)}${sub ? ` <small class="axs-hint">${esc(sub)}</small>` : ""}</span></button>`;
+    };
+    const desk = this.desktopHotbar().sort((a, b) => a.slot - b.slot).map((x) => item(x.macro, this.t("slot {n}", { n: x.slot }))).join("");
+    const all = [...(game.macros ?? [])].filter((m) => this.canRun(m)).sort((a, b) => a.name.localeCompare(b.name));
+    const rest = all.map((m) => item(m, m.folder?.name ?? "")).join("");
+    const sec = (label, body) => (body ? `<h3 class="axs-sec">${esc(label)}</h3>${body}` : "");
+    const sheet = this.openSheet(`<div class="axs-sheet-head"><span>${this.H("Add a macro to page {n}", { n: page })}</span><button type="button" class="axs-icon" data-action="close-sheet" title="${this.H("Close")}"><i class="fas fa-xmark"></i></button></div>
+      <input type="text" class="axs-search" name="macro-search" placeholder="${this.H("Search macros…")}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
+      <div class="axs-pick-lists">${sec(this.t("On your desktop hotbar"), desk)}${sec(this.t("All macros"), rest) || `<p class="axs-hint">${this.H("No macros you can run. The GM can share macros with you (their Configure Ownership).")}</p>`}</div>`,
+    { onClose: () => this.openMenu("hotbar") });
+    const box = sheet.querySelector(".axs-search");
+    box.addEventListener("input", () => {
+      const q = box.value.trim().toLowerCase();
+      for (const b of sheet.querySelectorAll(".axs-pick")) b.hidden = !!q && !b.dataset.name.includes(q);
+      for (const h of sheet.querySelectorAll(".axs-sec")) h.hidden = !!q;
+    });
+  }
+  async addMacro(id) {
+    const m = game.macros?.get(id), page = this.hotPage ?? 1;
+    this.closeSheet(true);
+    await this.act(async () => {
+      if (!m) return;
+      const slots = game.user.getHotbarMacros(page);
+      if (slots.some((x) => x.macro?.id === m.id)) { this.toast(this.t("{name} is already on this page.", { name: m.name })); return; }
+      const free = slots.find((x) => !x.macro);
+      if (!free) throw new Error(this.t("Page {n} is full: take a macro off it or go to another page.", { n: page }));
+      await game.user.assignHotbarMacro(m, free.slot);
+      this.toast(this.t("{name} added.", { name: m.name }));
+    });
+    this.openMenu("hotbar");
+  }
+  async removeMacro(slot) {
+    await this.act(() => game.user.assignHotbarMacro(null, Number(slot)));
+    this.openMenu("hotbar");
+  }
+  /** Put the desktop account's macros in the same slots here (the slots it leaves empty keep what they have). */
+  async copyDesktopHotbar() {
+    const list = this.desktopHotbar();
+    const main = game.users?.get(game.user.getFlag?.(this.MOD, "main") ?? "");
+    const skipped = Object.keys(main?.hotbar ?? {}).length - list.length;
+    await this.act(async () => {
+      if (!list.length) return;
+      await game.user.update({ hotbar: Object.fromEntries(list.map((x) => [String(x.slot), x.macro.id])) });
+      this.toast(skipped > 0 ? this.t("Copied {n} macros; {m} aren't shared with this account.", { n: list.length, m: skipped }) : this.t("Copied {n} macros.", { n: list.length }));
+    });
+    this.openMenu("hotbar");
   }
   async runMacro(id) {
     const m = game.macros?.get(id);

@@ -27,6 +27,8 @@
   padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
 }
 body.ax-voodoo-on { overflow: hidden; }
+/* Desktop HUDs over the VooDoo window (VooDoo also keeps them from starting for mobile accounts) */
+body.ax-voodoo-mobile #token-action-hud, body.ax-voodoo-on #token-action-hud { display: none !important; }
 body.ax-voodoo-on #notifications { z-index: 9500; }
 #ax-voodoo *, #ax-voodoo *::before, #ax-voodoo *::after { box-sizing: border-box; }
 #ax-voodoo button {
@@ -54,6 +56,9 @@ body.ax-voodoo-on #notifications { z-index: 9500; }
 .axs-menu-item .axs-menu-icon { width: 46px; text-align: center; font-size: 22px; color: var(--axs-accent); }
 .axs-menu-item small { display: block; margin-left: 0 !important; font-size: 13px; }
 #ax-voodoo .axs-menu-item { min-height: 52px !important; width: 100%; }
+#ax-voodoo .axs-hot-row { display: flex; align-items: center; gap: 6px; }
+#ax-voodoo .axs-hot-row .axs-menu-item { flex: 1; min-width: 0; }
+#ax-voodoo [data-menu="hotbar"] .axs-wide { margin-top: 6px; }
 .axs-sheet-box [data-menu] { display: flex; flex-direction: column; gap: 6px; }
 .axs-sheet-box [data-menu] .axs-sec { margin-bottom: 0; }
 .axs-hot-pages { margin-bottom: 0; }

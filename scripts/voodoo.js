@@ -10,7 +10,7 @@
  * Links (user flags): main user  flags.axeclefts-voodoo.mobile = mobile user id
  *                     mobile user flags.axeclefts-voodoo.main   = main user id
  *
- * API: game.modules.get("axeclefts-voodoo").api = { isMobile, mobileOf, mainOf, createMobile, syncAll, openAccounts, hasMap, setMap }
+ * API: game.modules.get("axeclefts-voodoo").api = { isMobile, mobileOf, mainOf, createMobile, syncAll, openAccounts, hasMap, setMap, canPick, pickPoint, showView }
  */
 import { VooDooWindow } from "./voodoo-window.js";
 import { registerTours } from "./voodoo-tours.js";
@@ -52,7 +52,7 @@ const leadGM = () => game.user.isGM && (game.users.activeGM ? game.users.activeG
 /* -------------------------------------------- */
 
 const INHERIT = () => CONST.DOCUMENT_OWNERSHIP_LEVELS?.INHERIT ?? -1;
-/** The ownership changes an actor needs so each mobile account matches its main account, or null. */
+/** The ownership changes a document (an actor or a macro) needs so each mobile account matches its main account, or null. */
 function ownershipPatch(actor, list = pairs()) {
   const own = actor.ownership ?? {}, patch = {};
   for (const [main, mobile] of list) {
@@ -70,8 +70,13 @@ async function syncAll() {
   const updates = [];
   for (const a of game.actors ?? []) { const p = ownershipPatch(a, list); if (p) updates.push({ _id: a.id, ownership: p }); }
   if (updates.length) await Actor.updateDocuments(updates);
-  return updates.length;
+  // Macros too: a player's own macros (an item dragged to the hotbar makes one) are theirs alone, so the phone couldn't run them
+  const macros = [];
+  for (const m of game.macros ?? []) { const p = ownershipPatch(m, list); if (p) macros.push({ _id: m.id, ownership: p }); }
+  if (macros.length) await Macro.updateDocuments(macros);
+  return updates.length + macros.length;
 }
+/** One actor's or macro's ownership in step (the lead GM's client). */
 async function syncActor(actor) {
   if (!leadGM() || !actor) return;
   const p = ownershipPatch(actor);
@@ -255,6 +260,24 @@ Hooks.once("setup", () => { if (mobileNow()) watchLowRes(); });
 /** Is Foundry's per-browser "disable game canvas" option there to use? */
 const hasNoCanvas = () => { try { return game.settings.settings.has("core.noCanvas"); } catch (e) { return false; } };
 
+/**
+ * Desktop HUDs that sit over the VooDoo window and do nothing there (Token Action HUD's bar): kept off for mobile
+ * accounts. Their own settings are left as they are (they are per browser, and the same browser may log in as a
+ * normal account): VooDoo only answers "off" for this session.
+ */
+const DESKTOP_HUDS = [["token-action-hud-core", "enable"]];
+Hooks.once("setup", () => {
+  if (!isMobile(game.user)) return;
+  const off = new Set(DESKTOP_HUDS.map(([m, k]) => `${m}.${k}`));
+  const settings = game.settings;
+  const get = settings.get;
+  settings.get = function (namespace, key, ...rest) {
+    if (off.has(`${namespace}.${key}`)) return false;
+    return get.call(this, namespace, key, ...rest);
+  };
+  document.body.classList.add("ax-voodoo-mobile");
+});
+
 Hooks.once("setup", () => {
   if (!hasNoCanvas()) return;
   const off = !!game.settings.get("core", "noCanvas");
@@ -286,6 +309,7 @@ Hooks.once("ready", async () => {
     if (map) document.body.classList.add("ax-voodoo-map");
     const win = new VooDooWindow({ MOD, t, H, esc, map, setMap: (on) => setMap(game.user, on) });
     win.mount();
+    theWindow = win;
     try { registerTours({ openAccounts, mobile: true, win: () => win }); } catch (err) { console.warn(`${MOD} | tours`, err); }
     watchLowRes();
     clearLowRes();
@@ -297,13 +321,15 @@ Hooks.once("ready", async () => {
     const moved = [...game.users].filter((u) => u.flags?.[OLD] && !u.flags?.[MOD]).map((u) => ({ _id: u.id, [`flags.${MOD}`]: { ...u.flags[OLD] } }));
     if (moved.length) { try { await User.updateDocuments(moved); console.log(`${MOD} | kept ${moved.length} account link(s) from Sendings`); } catch (err) { console.error(`${MOD} | moving Sendings links`, err); } }
   }
-  if (leadGM()) { try { const n = await syncAll(); if (n) console.log(`${MOD} | mobile accounts: ownership brought in step on ${n} actor(s)`); } catch (err) { console.error(`${MOD} | sync`, err); } }
+  if (leadGM()) { try { const n = await syncAll(); if (n) console.log(`${MOD} | mobile accounts: ownership brought in step on ${n} actor(s) and macro(s)`); } catch (err) { console.error(`${MOD} | sync`, err); } }
 });
 
 /* -------------------------------------------- */
 /*  Keeping links and ownership in step         */
 /* -------------------------------------------- */
 
+Hooks.on("createMacro", (macro) => { syncActor(macro).catch((e) => console.error(`${MOD} | sync`, e)); });
+Hooks.on("updateMacro", (macro, changes) => { if (changes?.ownership) syncActor(macro).catch((e) => console.error(`${MOD} | sync`, e)); });
 Hooks.on("createActor", (actor) => { syncActor(actor).catch((e) => console.error(`${MOD} | sync`, e)); });
 Hooks.on("updateActor", (actor, changes) => { if (changes?.ownership) syncActor(actor).catch((e) => console.error(`${MOD} | sync`, e)); });
 Hooks.on("updateUser", (user, changes) => {
@@ -329,4 +355,10 @@ Hooks.on("deleteUser", async (user) => {
 Hooks.on("renderPlayers", markPlayers);
 Hooks.on("renderPlayerList", markPlayers);
 
-const API = { isMobile, mobileOf, mainOf, createMobile, syncAll, openAccounts, hasMap, setMap };
+let theWindow = null;
+/** For other modules: can this browser pick a spot on VooDoo's map, and ask for one ({ prompt } → { x, y } or null). */
+const canPick = () => !!(theWindow?.map && globalThis.canvas?.ready && canvas.scene);
+const pickPoint = (opts) => (canPick() ? theWindow.map.pickPoint(opts) : Promise.resolve(null));
+/** For other modules: switch the phone to one of its views ("character", "party", "chat", "combat", "map"). False when not on a VooDoo phone. */
+const showView = (view) => { if (!theWindow?.views?.some?.(([v]) => v === view)) return false; theWindow.show(view); return true; };
+const API = { isMobile, mobileOf, mainOf, createMobile, syncAll, openAccounts, hasMap, setMap, canPick, pickPoint, showView };
